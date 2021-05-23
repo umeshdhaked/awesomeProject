@@ -9,23 +9,23 @@ package main
 import (
 	"fmt"
 	"github.com/umeshdhaked/awesomeProject/packages/pubsub"
-	"github.com/umeshdhaked/awesomeProject/packages/subscribers"
-	"github.com/umeshdhaked/awesomeProject/runner/api"
+	"math/rand"
+	"time"
 )
 
-var pubsubObj = pubsub.GetPubSub()
+var pubSubObj pubsub.IPubSub = pubsub.GetPubSub()
 
 func createTpc(id string) {
-	pubsubObj.CreateTopic(id)
+	pubSubObj.CreateTopic(id)
 }
 
 func createSub(id string) {
-	pubsubObj.AddSubscription("topic1", id)
+	pubSubObj.AddSubscription("1", id)
 }
 
 func main() {
 
-	fmt.Println("Runner started ...")
+	fmt.Printf("This is the simulation of library with default hardcoded configurations :) \n\n\n\n ")
 
 	//for i := 0 ; i<100 ; i++ {
 	//	go createTpc(fmt.Sprintf("%v", i))
@@ -36,23 +36,36 @@ func main() {
 	//}
 	//time.Sleep(2*time.Second)
 
-	pubsubObj.CreateTopic("topic1")
-	pubsubObj.AddSubscription("topic1", "sub1")
-	pubsubObj.AddSubscription("topic1", "sub2")
+	pubSubObj.CreateTopic("topic1")
+	pubSubObj.AddSubscription("topic1", "sub1")
+	pubSubObj.AddSubscription("topic1", "sub2")
 
-	pubsubObj.Subscribe("sub1", subscribers.SubscriberTypeA)
-	pubsubObj.Subscribe("sub2", subscribers.SubscriberTypeB)
 
-	pubsubObj.Publish("topic1", "Hello Subscriber1, Are ya winning son?")
-	//pubsubObj.Publish("topic1","Hello Subscriber2, Are ya winning son?")
-	//pubsubObj.Publish("topic1","Hello Subscriber3, Are ya winning son?")
+	pubSubObj.Subscribe("sub1", SubscriberTypeA)
+	pubSubObj.Subscribe("sub2", SubscriberTypeB)
 
-	//pubsubObj.UnSubscribe("sub1")
 
-	//pubsubObj.Publish("topic1","Hello , After Unsubscribe1")
-	//pubsubObj.Publish("topic1","Hello , After Unsubscribe2")
-	//pubsubObj.Publish("topic1","Hello , After Unsubscribe3")
+	var seededRand *rand.Rand = rand.New(rand.NewSource(time.Now().UnixNano()))
+	for i:=0 ; i<2 ; i++{
+		pubSubObj.Publish("topic1", fmt.Sprintf("Published randome Message: %v", seededRand.Int()))
+	}
 
-	api.HandleRequest()
+	time.Sleep(time.Minute*5)
+}
+
+
+func SubscriberTypeA(msg pubsub.Message) {
+	defer pubSubObj.Ack(msg.MessageId(), "sub1")
+
+	fmt.Println("SubscriberTypeA,  message : ", msg.Data() )
 
 }
+
+func SubscriberTypeB(msg pubsub.Message) {
+	defer pubSubObj.Ack(msg.MessageId(), "sub2")
+
+	fmt.Println("SubscriberTypeB,   message :", msg.Data())
+
+	time.Sleep(time.Second*20)
+}
+

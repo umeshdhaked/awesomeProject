@@ -1,31 +1,32 @@
 package pubsub
 
 import (
+	"errors"
 	"fmt"
 	"log"
 )
 import "sync"
 
-type Topics struct {
-	topicsMap  map[string]*Topic
+type topics struct {
+	topicsMap  map[string]*topic
 	topicMutex sync.RWMutex
 }
 
-func (p *PubSub) CreateTopic(topicName string) bool {
-	pubsub.topics.topicMutex.Lock()
-	defer pubsub.topics.topicMutex.Unlock()
-	val, ok := pubsub.topics.topicsMap[topicName]
+func (p *PubSub) CreateTopic(topicName string) (bool, error) {
+	p.topics.topicMutex.Lock()
+	defer p.topics.topicMutex.Unlock()
+	val, ok := p.topics.topicsMap[topicName]
 
 	if ok {
-		fmt.Println("Topic Already Exists", val)
-		return false
+		fmt.Println("topic Already Exists", val)
+		return false, errors.New("topic already exists")
 	} else {
-		pubsub.topics.topicsMap[topicName] = &Topic{TopicId: topicName}
-		return true
+		p.topics.topicsMap[topicName] = &topic{topicId: topicName}
+		return true, nil
 	}
 }
 
-func (p *PubSub) DeleteTopic(TopicID string) {
+func (p *PubSub) DeleteTopic(TopicID string) (bool, error) {
 
 	p.topics.topicMutex.Lock()
 	defer p.topics.topicMutex.Unlock()
@@ -33,9 +34,11 @@ func (p *PubSub) DeleteTopic(TopicID string) {
 	_, ok := p.topics.topicsMap[TopicID]
 	if ok {
 		delete(p.topics.topicsMap, TopicID)
-		log.Printf("Topic %q deleted \n", TopicID)
+		log.Printf("topic %q deleted \n", TopicID)
+		return true, nil
 	} else {
 		log.Printf("TopicID %q don't exist \n", TopicID)
+		return false,errors.New("topicID don't exist")
 	}
 
 }

@@ -1,42 +1,43 @@
 package pubsub
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"sync"
 )
 
-type Subscriptions struct {
-	subscriptionMap map[string]*Subscription
+type subscriptions struct {
+	subscriptionMap map[string]*subscription
 	subMutex        sync.RWMutex
 }
 
 //  Add subscription
 
-func (p *PubSub) AddSubscription(topicID, subName string) bool {
-	pubsub.subscriptions.subMutex.Lock()
-	defer pubsub.subscriptions.subMutex.Unlock()
+func (p *PubSub) AddSubscription(topicID, subName string) (bool, error) {
+	p.subscriptions.subMutex.Lock()
+	defer p.subscriptions.subMutex.Unlock()
 
-	val, ok := pubsub.subscriptions.subscriptionMap[subName]
+	val, ok := p.subscriptions.subscriptionMap[subName]
 	if ok {
-		fmt.Println("Subscription Already Exists", val)
-		return false
+		fmt.Println("AddSubscription()-> subscription Already Exists", val)
+		return false, errors.New("subscription Already Exists")
 	} else {
-		pubsub.topics.topicMutex.RLock()
-		topic, ok := pubsub.topics.topicsMap[topicID]
-		pubsub.topics.topicMutex.RUnlock()
+		p.topics.topicMutex.RLock()
+		topic, ok := p.topics.topicsMap[topicID]
+		p.topics.topicMutex.RUnlock()
 		if !ok {
-			fmt.Println("Topic doesn't Exists")
-			return false
+			fmt.Println("AddSubscription()-> topic doesn't Exists")
+			return false, errors.New("topic doesn't Exists")
 		}
 
-		pubsub.subscriptions.subscriptionMap[subName] = &Subscription{SubscriptionID: subName, pendingAck: make(map[int]*Message)}
-		topic.Subscriptions = append(topic.Subscriptions, pubsub.subscriptions.subscriptionMap[subName])
-		return true
+		p.subscriptions.subscriptionMap[subName] = &subscription{subscriptionID: subName, pendingAckMsg: make(map[int]*Message)}
+		topic.subscriptions = append(topic.subscriptions, p.subscriptions.subscriptionMap[subName])
+		return true, nil
 	}
 }
 
-func (p *PubSub) DeleteSubscription(SubscriptionID string) {
+func (p *PubSub) DeleteSubscription(SubscriptionID string)  (bool, error) {
 
 	p.subscriptions.subMutex.Lock()
 	defer p.subscriptions.subMutex.Unlock()
@@ -45,8 +46,11 @@ func (p *PubSub) DeleteSubscription(SubscriptionID string) {
 
 	if ok {
 		delete(p.topics.topicsMap, SubscriptionID)
-		log.Printf("Subscription %q deleted \n", SubscriptionID)
+		log.Printf("subscription %q deleted \n", SubscriptionID)
+
+		return true,nil
 	} else {
-		log.Printf("SubscriptionID %q don't exist \n", SubscriptionID)
+		log.Printf("DeleteSubscription()-> subscriptionID %q don't exist \n", SubscriptionID)
+		return false, errors.New("subscriptionID don't exist")
 	}
 }

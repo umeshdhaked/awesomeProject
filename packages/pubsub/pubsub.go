@@ -1,77 +1,83 @@
 package pubsub
 
-import "fmt"
+import (
+	"errors"
+	"fmt"
+)
 
 type IPubSub interface {
-	CreateTopic(topicName string) bool
+	CreateTopic(topicName string) (bool, error)
 
-	DeleteTopic(TopicID string)
+	DeleteTopic(TopicID string) (bool, error)
 
-	AddSubscription(topicID, subName string) bool
+	AddSubscription(topicID, subName string) (bool, error)
 
-	DeleteSubscription(SubscriptionID string)
+	DeleteSubscription(SubscriptionID string) (bool, error)
 
-	Subscribe(subscriptionID string, subscriberFunc func(msg Message))
+	Subscribe(subscriptionID string, subscriberFunc func(msg Message)) (bool, error)
 
-	UnSubscribe(subId string)
+	UnSubscribe(subId string) (bool, error)
 
-	Publish(topicId, message string)
+	Publish(topicId, message string) (bool, error)
 
-	Ack(msgId int, subId string)
+	Ack(msgId int, subId string) (bool, error)
 }
 
 type PubSub struct {
 	messageIdTracker int
 	flag             bool
 	ch               chan *Message
-	topics           Topics
-	subscriptions    Subscriptions
+	topics           topics
+	subscriptions    subscriptions
 }
 
-var pubsub = &PubSub{0, true, make(chan *Message, 10), Topics{topicsMap: make(map[string]*Topic)}, Subscriptions{subscriptionMap: make(map[string]*Subscription)}}
+var pubsub *PubSub = &PubSub{0, true, make(chan *Message, 50), topics{topicsMap: make(map[string]*topic)}, subscriptions{subscriptionMap: make(map[string]*subscription)}}
 
 func GetPubSub() IPubSub {
 	return pubsub
 }
 
-func GetAllTopicsAndSubscriptions() (map[string]*Topic, map[string]*Subscription) {
-	return pubsub.topics.topicsMap, pubsub.subscriptions.subscriptionMap
-}
 
-func (p *PubSub) Subscribe(subscriptionID string, subscriberFunc func(msg Message)) {
+func (p *PubSub) Subscribe(subscriptionID string, subscriberFunc func(msg Message)) (bool, error) {
 
-	var subscription = pubsub.subscriptions.subscriptionMap[subscriptionID]
+	var subscription = p.subscriptions.subscriptionMap[subscriptionID]
 
-	subscriber := Subscriber(subscriberFunc)
+	subscriber := subscriber(subscriberFunc)
 
 	subscription.addSubscriber(&subscriber)
 
+	return true, nil
+
 }
 
-func (p *PubSub) UnSubscribe(subId string) {
-	var subscription = pubsub.subscriptions.subscriptionMap[subId]
+func (p *PubSub) UnSubscribe(subId string) (bool, error) {
+	var subscription = p.subscriptions.subscriptionMap[subId]
 	subscription.removeSubscriber()
+
+	return true, nil
 }
 
-func (p *PubSub) Publish(topicId, message string) {
+func (p *PubSub) Publish(topicId, message string) (bool, error) {
 
 	p.messageIdTracker++
-	messageObj := &Message{MessageId: p.messageIdTracker, TopicId: topicId, Data: message}
+	messageObj := &Message{messageId: p.messageIdTracker, topicId: topicId, data: message}
 
 	if p.flag {
-		go pushMessage(p.ch)
+		go pushMessage(p)
 		p.flag = false
 	}
 	p.ch <- messageObj
+
+	return true, nil
 }
 
-func pushMessage(ch chan *Message) {
+func pushMessage(p *PubSub) {
 
 	for {
-		msg := <-ch
-		var topic *Topic = pubsub.topics.topicsMap[msg.TopicId]
+		msg := <-(*p).ch
+		var topicVar *topic = (*p).topics.topicsMap[msg.topicId]
 
-		var subsObjs []*Subscription = topic.Subscriptions
+		var subsObjs []*subscription = topicVar.subscriptions
 
 		for _, val := range subsObjs {
 			go val.sendMessage(msg)
@@ -80,7 +86,7 @@ func pushMessage(ch chan *Message) {
 
 }
 
-func (p *PubSub) Ack(msgId int, subId string) {
+func (p *PubSub) Ack(msgId int, subId string) (bool, error) {
 
 	p.subscriptions.subMutex.RLock()
 	subs, ok := p.subscriptions.subscriptionMap[subId]
@@ -88,16 +94,19 @@ func (p *PubSub) Ack(msgId int, subId string) {
 
 	if ok {
 		subs.pendingMapMutex.Lock()
-		_, ok1 := subs.pendingAck[msgId]
+		_, ok1 := subs.pendingAckMsg[msgId]
 		if ok1 {
-			delete(subs.pendingAck, msgId)
-			fmt.Printf("Message id %q has been Acknowledge by %q \n", msgId, subId)
-		} else {
-			fmt.Printf("Message is alrady Ack or wrong messageId: %q in subscription: %q \n", msgId, subId)
+			delete(subs.pendingAckMsg, msgId)
+			subs.pendingMapMutex.Unlock()
+			fmt.Printf("Ack()-> Message id %v has been Acknowledge by %v \n", msgId, subId)
+			return true, nil
 		}
 		subs.pendingMapMutex.Unlock()
+		fmt.Printf("Ack()-> Message is already Acknowledged or wrong messageId: %v in subscription: %v \n", msgId, subId)
+		return false, errors.New("message is already Ack or wrong subscriptionId")
 	} else {
-		fmt.Printf("Subscription %q doesn't exist", subId)
+		fmt.Printf("Ack()-> subscription %v doesn't exist", subId)
+		return false,errors.New("subscription doesn't exist")
 	}
 
 }
