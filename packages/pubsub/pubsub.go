@@ -24,21 +24,23 @@ type PubSub struct {
 	messageIdTracker int
 	flag             bool
 	ch               chan Message
+	topics           Topics
+	subscriptions    Subscriptions
 }
 
-var pubsub *PubSub = &PubSub{0, true, make(chan Message, 10)}
+var pubsub = &PubSub{0, true, make(chan Message, 10), Topics{topicsMap: make(map[string]*Topic)}, Subscriptions{subscriptionMap: make(map[string]*Subscription)}}
 
-func GetPubSub() IPubSub{
+func GetPubSub() IPubSub {
 	return pubsub
 }
 
 func GetAllTopicsAndSubscriptions() (map[string]*Topic, map[string]*Subscription) {
-	return topics.topicsMap, subscriptions.subscriptionMap
+	return pubsub.topics.topicsMap, pubsub.subscriptions.subscriptionMap
 }
 
 func (p *PubSub) Subscribe(subscriptionID string, subscriberFunc func(msg Message)) {
 
-	var subscription = subscriptions.subscriptionMap[subscriptionID]
+	var subscription = pubsub.subscriptions.subscriptionMap[subscriptionID]
 
 	subscriber := Subscriber(subscriberFunc)
 
@@ -47,7 +49,7 @@ func (p *PubSub) Subscribe(subscriptionID string, subscriberFunc func(msg Messag
 }
 
 func (p *PubSub) UnSubscribe(subId string) {
-	var subscription = subscriptions.subscriptionMap[subId]
+	var subscription = pubsub.subscriptions.subscriptionMap[subId]
 	subscription.removeSubscriber()
 }
 
@@ -67,7 +69,7 @@ func pushMessage(ch chan Message) {
 
 	for {
 		msg := <-ch
-		var topic = topics.topicsMap[msg.TopicId]
+		var topic = pubsub.topics.topicsMap[msg.TopicId]
 
 		var subsObjs = topic.Subscriptions
 
