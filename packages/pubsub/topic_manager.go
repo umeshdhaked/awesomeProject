@@ -1,4 +1,4 @@
-package broker
+package pubsub
 
 import "fmt"
 import "sync"

@@ -8,17 +8,17 @@ package main
 
 import (
 	"fmt"
-	"github.com/umeshdhaked/awesomeProject/packages/broker"
+	"github.com/umeshdhaked/awesomeProject/packages/pubsub"
 	"github.com/umeshdhaked/awesomeProject/runner/api"
 	"log"
 )
 
 func createTpc(id string) {
-	broker.CreateTopic(id)
+	pubsub.CreateTopic(id)
 }
 
 func createSub(id string) {
-	broker.AddSubscription("topic1",id)
+	pubsub.AddSubscription("topic1",id)
 }
 
 func main() {
@@ -34,28 +34,28 @@ func main() {
 	//}
 	//time.Sleep(2*time.Second)
 
-	broker.CreateTopic("topic1")
-	broker.AddSubscription("topic1", "sub1")
-	broker.Subscribe("sub1",messageReceiverFunc1)
+	pubsub.CreateTopic("topic1")
+	pubsub.AddSubscription("topic1", "sub1")
+	pubsub.Subscribe("sub1",messageReceiverFunc1)
 
-	broker.Publish("topic1","Hello Subscriber1, Are ya winning son?")
-	broker.Publish("topic1","Hello Subscriber2, Are ya winning son?")
-	broker.Publish("topic1","Hello Subscriber3, Are ya winning son?")
+	pubsub.Publish("topic1","Hello Subscriber1, Are ya winning son?")
+	pubsub.Publish("topic1","Hello Subscriber2, Are ya winning son?")
+	pubsub.Publish("topic1","Hello Subscriber3, Are ya winning son?")
 
-	//broker.Unsubscribe("sub1")
-	broker.Publish("topic1","Hello Subscriber4, Are ya winning son?")
-	broker.Publish("topic1","Hello Subscriber5, Are ya winning son?")
-	broker.Publish("topic1","Hello Subscriber6, Are ya winning son?")
+	//pubsub.Unsubscribe("sub1")
+	pubsub.Publish("topic1","Hello Subscriber4, Are ya winning son?")
+	pubsub.Publish("topic1","Hello Subscriber5, Are ya winning son?")
+	pubsub.Publish("topic1","Hello Subscriber6, Are ya winning son?")
 
 
 	api.HandleRequest()
 
 }
 
-var messageReceiverFunc1 = func(message broker.Message) {
+var messageReceiverFunc1 = func(message pubsub.Message) {
 	fmt.Println("messageId:",message.MessageId,"| message:",message.Data)
 }
 
-var messageReceiverFunc2 = func(message broker.Message) {
+var messageReceiverFunc2 = func(message pubsub.Message) {
 	log.Println("messageId:",message.MessageId,"| message:",message.Data)
 }

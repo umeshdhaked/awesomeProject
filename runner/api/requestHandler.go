@@ -2,7 +2,7 @@ package api
 
 import (
 	"fmt"
-	"github.com/umeshdhaked/awesomeProject/packages/broker"
+	"github.com/umeshdhaked/awesomeProject/packages/pubsub"
 	"log"
 	"net/http"
 	"strings"
@@ -17,7 +17,7 @@ func handlePublish( w http.ResponseWriter, r *http.Request ) {
 
 	data := strings.TrimPrefix(r.URL.Path, "/publish/")
 
-	broker.Publish("topic1", "apiData:"+data)
+	pubsub.Publish("topic1", "apiData:"+data)
 
 	fmt.Fprintln(w,"response:"+data)
 }
