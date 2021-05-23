@@ -17,18 +17,18 @@ type IPubSub interface {
 
 	Publish(topicId, message string)
 
-	Ack(msgId, subId string)
+	Ack(msgId int, subId string)
 }
 
 type PubSub struct {
 	messageIdTracker int
 	flag             bool
-	ch               chan Message
+	ch               chan *Message
 	topics           Topics
 	subscriptions    Subscriptions
 }
 
-var pubsub = &PubSub{0, true, make(chan Message, 10), Topics{topicsMap: make(map[string]*Topic)}, Subscriptions{subscriptionMap: make(map[string]*Subscription)}}
+var pubsub = &PubSub{0, true, make(chan *Message, 10), Topics{topicsMap: make(map[string]*Topic)}, Subscriptions{subscriptionMap: make(map[string]*Subscription)}}
 
 func GetPubSub() IPubSub {
 	return pubsub
@@ -56,7 +56,7 @@ func (p *PubSub) UnSubscribe(subId string) {
 func (p *PubSub) Publish(topicId, message string) {
 
 	p.messageIdTracker++
-	messageObj := Message{p.messageIdTracker, topicId, message}
+	messageObj := &Message{MessageId: p.messageIdTracker, TopicId: topicId, Data: message}
 
 	if p.flag {
 		go pushMessage(p.ch)
@@ -65,7 +65,7 @@ func (p *PubSub) Publish(topicId, message string) {
 	p.ch <- messageObj
 }
 
-func pushMessage(ch chan Message) {
+func pushMessage(ch chan *Message) {
 
 	for {
 		msg := <-ch
@@ -74,12 +74,30 @@ func pushMessage(ch chan Message) {
 		var subsObjs []*Subscription = topic.Subscriptions
 
 		for _, val := range subsObjs {
-			go val.sendMessage(&msg)
+			go val.sendMessage(msg)
 		}
 	}
 
 }
 
-func (p *PubSub) Ack(msgId, subId string) {
-	fmt.Println("Not yet implemented")
+func (p *PubSub) Ack(msgId int, subId string) {
+
+	p.subscriptions.subMutex.RLock()
+	subs, ok := p.subscriptions.subscriptionMap[subId]
+	p.subscriptions.subMutex.RUnlock()
+
+	if ok {
+		subs.pendingMapMutex.Lock()
+		_, ok1 := subs.pendingAck[msgId]
+		if ok1 {
+			delete(subs.pendingAck, msgId)
+			fmt.Printf("Message id %q has been Acknowledge by %q \n", msgId, subId)
+		} else {
+			fmt.Printf("Message is alrady Ack or wrong messageId: %q in subscription: %q \n", msgId, subId)
+		}
+		subs.pendingMapMutex.Unlock()
+	} else {
+		fmt.Printf("Subscription %q doesn't exist", subId)
+	}
+
 }

@@ -2,6 +2,7 @@ package pubsub
 
 import (
 	"fmt"
+	"log"
 	"sync"
 )
 
@@ -29,12 +30,23 @@ func (p *PubSub) AddSubscription(topicID, subName string) bool {
 			return false
 		}
 
-		pubsub.subscriptions.subscriptionMap[subName] = &Subscription{SubscriptionID: subName}
+		pubsub.subscriptions.subscriptionMap[subName] = &Subscription{SubscriptionID: subName, pendingAck: make(map[int]*Message)}
 		topic.Subscriptions = append(topic.Subscriptions, pubsub.subscriptions.subscriptionMap[subName])
 		return true
 	}
 }
 
 func (p *PubSub) DeleteSubscription(SubscriptionID string) {
-	fmt.Println("DeleteSubscription yet to be implemented")
+
+	p.subscriptions.subMutex.Lock()
+	defer p.subscriptions.subMutex.Unlock()
+
+	_, ok := p.subscriptions.subscriptionMap[SubscriptionID]
+
+	if ok {
+		delete(p.topics.topicsMap, SubscriptionID)
+		log.Printf("Subscription %q deleted \n", SubscriptionID)
+	} else {
+		log.Printf("SubscriptionID %q don't exist \n", SubscriptionID)
+	}
 }

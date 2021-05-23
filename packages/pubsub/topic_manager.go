@@ -1,6 +1,9 @@
 package pubsub
 
-import "fmt"
+import (
+	"fmt"
+	"log"
+)
 import "sync"
 
 type Topics struct {
@@ -23,5 +26,16 @@ func (p *PubSub) CreateTopic(topicName string) bool {
 }
 
 func (p *PubSub) DeleteTopic(TopicID string) {
-	fmt.Println("DeleteTopic yet to be implemented")
+
+	p.topics.topicMutex.Lock()
+	defer p.topics.topicMutex.Unlock()
+
+	_, ok := p.topics.topicsMap[TopicID]
+	if ok {
+		delete(p.topics.topicsMap, TopicID)
+		log.Printf("Topic %q deleted \n", TopicID)
+	} else {
+		log.Printf("TopicID %q don't exist \n", TopicID)
+	}
+
 }

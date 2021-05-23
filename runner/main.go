@@ -20,7 +20,7 @@ func createTpc(id string) {
 }
 
 func createSub(id string) {
-	pubsubObj.AddSubscription("topic1",id)
+	pubsubObj.AddSubscription("topic1", id)
 }
 
 func main() {
@@ -40,19 +40,18 @@ func main() {
 	pubsubObj.AddSubscription("topic1", "sub1")
 	pubsubObj.AddSubscription("topic1", "sub2")
 
-	pubsubObj.Subscribe("sub1",subscribers.SubscriberTypeA)
-	pubsubObj.Subscribe("sub2",subscribers.SubscriberTypeB)
+	pubsubObj.Subscribe("sub1", subscribers.SubscriberTypeA)
+	pubsubObj.Subscribe("sub2", subscribers.SubscriberTypeB)
 
-	pubsubObj.Publish("topic1","Hello Subscriber1, Are ya winning son?")
-	pubsubObj.Publish("topic1","Hello Subscriber2, Are ya winning son?")
-	pubsubObj.Publish("topic1","Hello Subscriber3, Are ya winning son?")
+	pubsubObj.Publish("topic1", "Hello Subscriber1, Are ya winning son?")
+	//pubsubObj.Publish("topic1","Hello Subscriber2, Are ya winning son?")
+	//pubsubObj.Publish("topic1","Hello Subscriber3, Are ya winning son?")
 
-	pubsubObj.UnSubscribe("sub1")
+	//pubsubObj.UnSubscribe("sub1")
 
-	pubsubObj.Publish("topic1","Hello , After Unsubscribe1")
-	pubsubObj.Publish("topic1","Hello , After Unsubscribe2")
-	pubsubObj.Publish("topic1","Hello , After Unsubscribe3")
-
+	//pubsubObj.Publish("topic1","Hello , After Unsubscribe1")
+	//pubsubObj.Publish("topic1","Hello , After Unsubscribe2")
+	//pubsubObj.Publish("topic1","Hello , After Unsubscribe3")
 
 	api.HandleRequest()
 
