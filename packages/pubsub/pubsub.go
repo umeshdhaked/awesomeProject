@@ -69,9 +69,9 @@ func pushMessage(ch chan Message) {
 
 	for {
 		msg := <-ch
-		var topic = pubsub.topics.topicsMap[msg.TopicId]
+		var topic *Topic = pubsub.topics.topicsMap[msg.TopicId]
 
-		var subsObjs = topic.Subscriptions
+		var subsObjs []*Subscription = topic.Subscriptions
 
 		for _, val := range subsObjs {
 			go val.sendMessage(&msg)

@@ -47,10 +47,11 @@ func main() {
 	pubsubObj.Publish("topic1","Hello Subscriber2, Are ya winning son?")
 	pubsubObj.Publish("topic1","Hello Subscriber3, Are ya winning son?")
 
-	//pubsubObj.Unsubscribe("sub1")
-	pubsubObj.Publish("topic1","Hello Subscriber4, Are ya winning son?")
-	pubsubObj.Publish("topic1","Hello Subscriber5, Are ya winning son?")
-	pubsubObj.Publish("topic1","Hello Subscriber6, Are ya winning son?")
+	pubsubObj.UnSubscribe("sub1")
+
+	pubsubObj.Publish("topic1","Hello , After Unsubscribe1")
+	pubsubObj.Publish("topic1","Hello , After Unsubscribe2")
+	pubsubObj.Publish("topic1","Hello , After Unsubscribe3")
 
 
 	api.HandleRequest()
