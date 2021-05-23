@@ -3,6 +3,7 @@ package pubsub
 import (
 	"errors"
 	"fmt"
+	"time"
 )
 
 type IPubSub interface {
@@ -30,6 +31,8 @@ type PubSub struct {
 	topics           topics
 	subscriptions    subscriptions
 }
+
+const retryTime = time.Second * 15
 
 var pubsub *PubSub = &PubSub{0, true, make(chan *Message, 50), topics{topicsMap: make(map[string]*topic)}, subscriptions{subscriptionMap: make(map[string]*subscription)}}
 

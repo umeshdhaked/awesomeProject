@@ -46,7 +46,7 @@ func main() {
 
 
 	var seededRand *rand.Rand = rand.New(rand.NewSource(time.Now().UnixNano()))
-	for i:=0 ; i<2 ; i++{
+	for i:=0 ; i<100 ; i++{
 		pubSubObj.Publish("topic1", fmt.Sprintf("Published randome Message: %v", seededRand.Int()))
 	}
 

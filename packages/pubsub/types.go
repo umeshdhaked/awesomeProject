@@ -67,7 +67,7 @@ func (s *subscription) sendMessage(msg *Message) {
 		}
 
 		// 5 second time to check for Acknowledgement
-		time.Sleep(time.Second * 5)
+		time.Sleep(retryTime)
 
 		s.pendingMapMutex.RLock()
 		_, ok = s.pendingAckMsg[msg.messageId]
