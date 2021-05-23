@@ -1,9 +1,60 @@
 package broker
 
-/* will implement methods such as...
+import "fmt"
 
-publishMessage (topicId, message)....
+type PubSub interface {
+	CreateTopic()
 
-push message to subscriber....
+	AddSubscription()
 
-*/
+	Publish()
+
+	Subscribe()
+
+	Ack()
+}
+
+
+//  Create subscription
+var topics map[string]*Topic
+
+func CreateTopic(topicName string) bool {
+	val, ok := topics[topicName]
+
+	if ok {
+		fmt.Println("Topic Already Exists", val)
+		return false
+	} else {
+		topics[topicName] = &Topic{topicId: topicName}
+		return true
+	}
+}
+
+
+//  Add subscription
+var subscriptions map[string]*Subscription
+
+func AddSubscription(topicID string, subName string) bool {
+	val, ok := subscriptions[subName]
+
+	if ok {
+		fmt.Println("Subscription Already Exists", val)
+		return false
+	} else {
+		topic, ok := topics[topicID]
+		if !ok {
+			fmt.Println("Topic doesn't Exists")
+			return false
+		}
+
+		subscriptions[subName] = &Subscription{subscriptionId: subName}
+		topic.subscriptions = append(topic.subscriptions, subscriptions[subName] )
+		return true
+	}
+}
+
+
+func GetAll() (map[string]*Topic, map[string]*Subscription){
+	return topics,subscriptions
+}
+
