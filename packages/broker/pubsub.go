@@ -20,23 +20,28 @@ func GetAllTopicsAndSubscriptions() (map[string]*Topic, map[string]*Subscription
 
 func Subscribe(subscriptionID string, subscriberFunc func(msg Message)) {
 
-	var sub = subscriptions.subscriptionMap[subscriptionID]
+	var subscription *Subscription = subscriptions.subscriptionMap[subscriptionID]
 
 	subscriber := Subscriber(subscriberFunc)
 
-	sub.Subscriber = &subscriber
+	subscription.addSubscriber(&subscriber)
 
+}
+
+func Unsubscribe(subId string) {
+	var subscription *Subscription = subscriptions.subscriptionMap[subId]
+	subscription.removeSubscriber()
 }
 
 func Publish(topicId, message string) {
 	messageIdTracker++
 	messageObj := Message{messageIdTracker, message}
 
-	pushMessage(topicId, messageObj)
+	pushMessage(topicId, &messageObj)
 
 }
 
-func pushMessage(topicId string, msg Message) {
+func pushMessage(topicId string, msg *Message) {
 
 	var topic = topics.topicsMap[topicId]
 
