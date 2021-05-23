@@ -1,24 +1,42 @@
 package pubsub
 
-type PubSub interface {
-	CreateTopic()
+import "fmt"
 
-	AddSubscription()
+type IPubSub interface {
+	CreateTopic(topicName string) bool
 
-	Publish()
+	DeleteTopic(TopicID string)
 
-	Subscribe()
+	AddSubscription(topicID, subName string) bool
 
-	Ack()
+	DeleteSubscription(SubscriptionID string)
+
+	Subscribe(subscriptionID string, subscriberFunc func(msg Message))
+
+	UnSubscribe(subId string)
+
+	Publish(topicId, message string)
+
+	Ack(msgId, subId string)
 }
 
-var messageIdTracker = 0
+type PubSub struct {
+	messageIdTracker int
+	flag             bool
+	ch               chan Message
+}
+
+var pubsub *PubSub = &PubSub{0, true, make(chan Message, 10)}
+
+func GetPubSub() IPubSub{
+	return pubsub
+}
 
 func GetAllTopicsAndSubscriptions() (map[string]*Topic, map[string]*Subscription) {
 	return topics.topicsMap, subscriptions.subscriptionMap
 }
 
-func Subscribe(subscriptionID string, subscriberFunc func(msg Message)) {
+func (p *PubSub) Subscribe(subscriptionID string, subscriberFunc func(msg Message)) {
 
 	var subscription = subscriptions.subscriptionMap[subscriptionID]
 
@@ -28,24 +46,21 @@ func Subscribe(subscriptionID string, subscriberFunc func(msg Message)) {
 
 }
 
-func Unsubscribe(subId string) {
+func (p *PubSub) UnSubscribe(subId string) {
 	var subscription = subscriptions.subscriptionMap[subId]
 	subscription.removeSubscriber()
 }
 
-var flag = true
-var ch = make(chan Message, 10)
+func (p *PubSub) Publish(topicId, message string) {
 
-func Publish(topicId, message string) {
+	p.messageIdTracker++
+	messageObj := Message{p.messageIdTracker, topicId, message}
 
-	messageIdTracker++
-	messageObj := Message{messageIdTracker, topicId, message}
-
-	if flag {
-		go pushMessage(ch)
-		flag = false
+	if p.flag {
+		go pushMessage(p.ch)
+		p.flag = false
 	}
-	ch <- messageObj
+	p.ch <- messageObj
 }
 
 func pushMessage(ch chan Message) {
@@ -61,4 +76,8 @@ func pushMessage(ch chan Message) {
 		}
 	}
 
+}
+
+func (p *PubSub) Ack(msgId, subId string) {
+	fmt.Println("Not yet implemented")
 }

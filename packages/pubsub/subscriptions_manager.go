@@ -7,13 +7,13 @@ import (
 
 type Subscriptions struct {
 	subscriptionMap map[string]*Subscription
-	subMutex sync.RWMutex
+	subMutex        sync.RWMutex
 }
 
 //  Add subscription
-var subscriptions Subscriptions = Subscriptions{subscriptionMap: make(map[string]*Subscription)}
+var subscriptions = Subscriptions{subscriptionMap: make(map[string]*Subscription)}
 
-func AddSubscription(topicID string, subName string) bool {
+func (p *PubSub) AddSubscription(topicID, subName string) bool {
 	subscriptions.subMutex.Lock()
 	defer subscriptions.subMutex.Unlock()
 
@@ -31,7 +31,13 @@ func AddSubscription(topicID string, subName string) bool {
 		}
 
 		subscriptions.subscriptionMap[subName] = &Subscription{SubscriptionID: subName}
-		topic.Subscriptions = append(topic.Subscriptions, subscriptions.subscriptionMap[subName] )
+		topic.Subscriptions = append(topic.Subscriptions, subscriptions.subscriptionMap[subName])
 		return true
 	}
 }
+
+
+func (p *PubSub) DeleteSubscription(SubscriptionID string) {
+	fmt.Println("DeleteSubscription yet to be implemented")
+}
+

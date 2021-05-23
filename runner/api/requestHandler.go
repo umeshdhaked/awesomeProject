@@ -17,7 +17,8 @@ func handlePublish( w http.ResponseWriter, r *http.Request ) {
 
 	data := strings.TrimPrefix(r.URL.Path, "/publish/")
 
-	pubsub.Publish("topic1", "apiData:"+data)
+	ps := pubsub.GetPubSub()
+	ps.Publish("topic1", "apiData:"+data)
 
 	fmt.Fprintln(w,"response:"+data)
 }

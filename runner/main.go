@@ -9,16 +9,18 @@ package main
 import (
 	"fmt"
 	"github.com/umeshdhaked/awesomeProject/packages/pubsub"
+	"github.com/umeshdhaked/awesomeProject/packages/subscribers"
 	"github.com/umeshdhaked/awesomeProject/runner/api"
-	"log"
 )
 
+var pubsubObj = pubsub.GetPubSub()
+
 func createTpc(id string) {
-	pubsub.CreateTopic(id)
+	pubsubObj.CreateTopic(id)
 }
 
 func createSub(id string) {
-	pubsub.AddSubscription("topic1",id)
+	pubsubObj.AddSubscription("topic1",id)
 }
 
 func main() {
@@ -34,28 +36,23 @@ func main() {
 	//}
 	//time.Sleep(2*time.Second)
 
-	pubsub.CreateTopic("topic1")
-	pubsub.AddSubscription("topic1", "sub1")
-	pubsub.Subscribe("sub1",messageReceiverFunc1)
+	pubsubObj.CreateTopic("topic1")
+	pubsubObj.AddSubscription("topic1", "sub1")
+	pubsubObj.AddSubscription("topic1", "sub2")
 
-	pubsub.Publish("topic1","Hello Subscriber1, Are ya winning son?")
-	pubsub.Publish("topic1","Hello Subscriber2, Are ya winning son?")
-	pubsub.Publish("topic1","Hello Subscriber3, Are ya winning son?")
+	pubsubObj.Subscribe("sub1",subscribers.SubscriberTypeA)
+	pubsubObj.Subscribe("sub2",subscribers.SubscriberTypeB)
 
-	//pubsub.Unsubscribe("sub1")
-	pubsub.Publish("topic1","Hello Subscriber4, Are ya winning son?")
-	pubsub.Publish("topic1","Hello Subscriber5, Are ya winning son?")
-	pubsub.Publish("topic1","Hello Subscriber6, Are ya winning son?")
+	pubsubObj.Publish("topic1","Hello Subscriber1, Are ya winning son?")
+	pubsubObj.Publish("topic1","Hello Subscriber2, Are ya winning son?")
+	pubsubObj.Publish("topic1","Hello Subscriber3, Are ya winning son?")
+
+	//pubsubObj.Unsubscribe("sub1")
+	pubsubObj.Publish("topic1","Hello Subscriber4, Are ya winning son?")
+	pubsubObj.Publish("topic1","Hello Subscriber5, Are ya winning son?")
+	pubsubObj.Publish("topic1","Hello Subscriber6, Are ya winning son?")
 
 
 	api.HandleRequest()
 
-}
-
-var messageReceiverFunc1 = func(message pubsub.Message) {
-	fmt.Println("messageId:",message.MessageId,"| message:",message.Data)
-}
-
-var messageReceiverFunc2 = func(message pubsub.Message) {
-	log.Println("messageId:",message.MessageId,"| message:",message.Data)
 }
