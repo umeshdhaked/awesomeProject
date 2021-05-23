@@ -7,17 +7,13 @@ type Topic struct {
 	Subscriptions []*Subscription
 }
 
-
 type Message struct {
 	MessageId int
+	TopicId   string
 	Data      string
 }
 
 type Subscriber func(message Message)
-
-
-
-
 
 type ISubscription interface {
 	sendMessage(msg *Message)
@@ -49,7 +45,7 @@ func (s *Subscription) addSubscriber(subscriber *Subscriber) {
 	}
 }
 
-func (s *Subscription) removeSubscriber(){
+func (s *Subscription) removeSubscriber() {
 	if s.Subscriber == nil {
 		log.Println("No subscriber found")
 	} else {

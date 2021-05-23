@@ -20,7 +20,7 @@ func GetAllTopicsAndSubscriptions() (map[string]*Topic, map[string]*Subscription
 
 func Subscribe(subscriptionID string, subscriberFunc func(msg Message)) {
 
-	var subscription *Subscription = subscriptions.subscriptionMap[subscriptionID]
+	var subscription = subscriptions.subscriptionMap[subscriptionID]
 
 	subscriber := Subscriber(subscriberFunc)
 
@@ -29,26 +29,36 @@ func Subscribe(subscriptionID string, subscriberFunc func(msg Message)) {
 }
 
 func Unsubscribe(subId string) {
-	var subscription *Subscription = subscriptions.subscriptionMap[subId]
+	var subscription = subscriptions.subscriptionMap[subId]
 	subscription.removeSubscriber()
 }
 
+var flag = true
+var ch = make(chan Message, 10)
+
 func Publish(topicId, message string) {
+
 	messageIdTracker++
-	messageObj := Message{messageIdTracker, message}
+	messageObj := Message{messageIdTracker, topicId, message}
 
-	pushMessage(topicId, &messageObj)
-
+	if flag {
+		go pushMessage(ch)
+		flag = false
+	}
+	ch <- messageObj
 }
 
-func pushMessage(topicId string, msg *Message) {
+func pushMessage(ch chan Message) {
 
-	var topic = topics.topicsMap[topicId]
+	for {
+		msg := <-ch
+		var topic = topics.topicsMap[msg.TopicId]
 
-	var subsObjs = topic.Subscriptions
+		var subsObjs = topic.Subscriptions
 
-	for _, val := range subsObjs {
-		val.sendMessage(msg)
+		for _, val := range subsObjs {
+			go val.sendMessage(&msg)
+		}
 	}
 
 }
