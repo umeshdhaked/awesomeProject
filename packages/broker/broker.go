@@ -30,7 +30,6 @@ func CreateTopic(topicName string) bool {
 	}
 }
 
-
 //  Add subscription
 var subscriptions map[string]*Subscription = make(map[string]*Subscription)
 
