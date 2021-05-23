@@ -1,9 +1,27 @@
 package broker
 
+import "fmt"
+import "sync"
 
-/* will implement methods such as...
+type Topics struct {
+	topicsMap map[string]*Topic
+	topicMutex sync.RWMutex
+}
 
-createTopic
-addTopic
 
-*/
+//  Create topic
+var topics Topics = Topics{topicsMap: make(map[string]*Topic)}
+
+func CreateTopic(topicName string) bool {
+	topics.topicMutex.Lock()
+	defer topics.topicMutex.Unlock()
+	val, ok := topics.topicsMap[topicName]
+
+	if ok {
+		fmt.Println("Topic Already Exists", val)
+		return false
+	} else {
+		topics.topicsMap[topicName] = &Topic{TopicId: topicName}
+		return true
+	}
+}

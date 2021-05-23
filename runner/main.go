@@ -9,7 +9,16 @@ package main
 import (
 	"fmt"
 	"github.com/umeshdhaked/awesomeProject/packages/broker"
+	"time"
 )
+
+func createTpc(id string) {
+	broker.CreateTopic(id)
+}
+
+func createSub(id string) {
+	broker.AddSubscription("topic1",id)
+}
 
 func main() {
 
@@ -17,31 +26,31 @@ func main() {
 
 	broker.CreateTopic("topic1")
 
-	broker.CreateTopic("topic2")
+	for i := 0 ; i<100 ; i++ {
+		go createTpc(fmt.Sprintf("%v", i))
+	}
+
+	for i := 0 ; i<100 ; i++ {
+		go createSub(fmt.Sprintf("%v", i))
+	}
+
+	time.Sleep(2*time.Second)
 
 	broker.AddSubscription("topic1", "sub1")
-	broker.AddSubscription("topic1", "sub2")
-
-	broker.AddSubscription("topic2", "sub6")
-
-	broker.AddSubscription("topic1", "sub3")
-
-	broker.AddSubscription("topic2", "sub7")
-
-	t, s := broker.GetAll()
-
-	for key,topic := range t {
-		fmt.Println( "map key:",key)
-
-		fmt.Printf("for %q subscriptions are:\n", topic.TopicId)
-		for index,sub := range topic.Subscriptions {
-			fmt.Println(index,sub.SubscriptionId)
-		}
 
 
-	}
-	fmt.Println("---------All subscriptions list------------")
-	for key,val := range s {
-		fmt.Println("key:",key,"val:",val)
-	}
+	broker.Subscribe("sub1",messageReceiverFunc)
+
+	broker.Publish("topic1","Hello Subscriber1, Are ya winning son?")
+	broker.Publish("topic1","Hello Subscriber2, Are ya winning son?")
+	broker.Publish("topic1","Hello Subscriber3, Are ya winning son?")
+	broker.Publish("topic1","Hello Subscriber4, Are ya winning son?")
+	broker.Publish("topic1","Hello Subscriber5, Are ya winning son?")
+	broker.Publish("topic1","Hello Subscriber6, Are ya winning son?")
+
+
+}
+
+var messageReceiverFunc = func(message broker.Message) {
+	fmt.Println(message.MessageId,message.Data)
 }
