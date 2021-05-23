@@ -2,10 +2,10 @@ package broker
 
 
 type Topic struct {
-	topicId string
-	subscriptions []*Subscription
+	TopicId       string
+	Subscriptions []*Subscription
 }
 
 type Subscription struct {
-	subscriptionId string
+	SubscriptionId string
 }

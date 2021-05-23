@@ -16,7 +16,7 @@ type PubSub interface {
 
 
 //  Create subscription
-var topics map[string]*Topic
+var topics map[string]*Topic = make(map[string]*Topic)
 
 func CreateTopic(topicName string) bool {
 	val, ok := topics[topicName]
@@ -25,14 +25,14 @@ func CreateTopic(topicName string) bool {
 		fmt.Println("Topic Already Exists", val)
 		return false
 	} else {
-		topics[topicName] = &Topic{topicId: topicName}
+		topics[topicName] = &Topic{TopicId: topicName}
 		return true
 	}
 }
 
 
 //  Add subscription
-var subscriptions map[string]*Subscription
+var subscriptions map[string]*Subscription = make(map[string]*Subscription)
 
 func AddSubscription(topicID string, subName string) bool {
 	val, ok := subscriptions[subName]
@@ -47,8 +47,8 @@ func AddSubscription(topicID string, subName string) bool {
 			return false
 		}
 
-		subscriptions[subName] = &Subscription{subscriptionId: subName}
-		topic.subscriptions = append(topic.subscriptions, subscriptions[subName] )
+		subscriptions[subName] = &Subscription{SubscriptionId: subName}
+		topic.Subscriptions = append(topic.Subscriptions, subscriptions[subName] )
 		return true
 	}
 }
