@@ -50,16 +50,16 @@ func main() {
 		pubSubObj.Publish("topic1", fmt.Sprintf("Published randome Message: %v", seededRand.Int()))
 	}
 
-	//time.Sleep(time.Second*3)
+	time.Sleep(time.Second*3)
 	//pubSubObj.UnSubscribe("sub1")
 	//pubSubObj.UnSubscribe("sub2")
 
 	//pubSubObj.DeleteSubscription("sub1")
 	//pubSubObj.DeleteSubscription("sub2")
-	//pubSubObj.DeleteTopic("topic1")
+	pubSubObj.DeleteTopic("topic1")
 
-	//time.Sleep(time.Second*3)
-	//pubSubObj.Publish("topic1", fmt.Sprintf("Published randome Message: %v", seededRand.Int()))
+	time.Sleep(time.Second*3)
+	pubSubObj.Publish("topic1", fmt.Sprintf("Published randome Message: %v", seededRand.Int()))
 
 
 	time.Sleep(time.Minute*5)
@@ -78,6 +78,6 @@ func SubscriberTypeB(msg pubsub.Message) {
 
 	fmt.Println("SubscriberTypeB,   message :", msg.Data())
 
-	time.Sleep(time.Second*20)
+	//time.Sleep(time.Second*20)
 }
 

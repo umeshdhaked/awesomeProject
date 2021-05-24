@@ -68,7 +68,7 @@ func (p *PubSub) DeleteSubscription(SubscriptionID string)  (bool, error) {
 		// deleting subscription entry from subscriptionTopicMap
 		delete(p.subscriptionTopics.subscriptionTopicMap, SubscriptionID)
 
-		log.Printf("subscription %q deleted \n", SubscriptionID)
+		log.Printf("DeleteSubscription()-> subscription %q deleted \n", SubscriptionID)
 
 		return true,nil
 	} else {

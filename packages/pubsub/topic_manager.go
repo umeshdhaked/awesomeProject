@@ -40,16 +40,16 @@ func (p *PubSub) DeleteTopic(TopicID string) (bool, error) {
 		for key,_ := range topicVar.subscriptions {
 			delete(p.subscriptionTopics.subscriptionTopicMap,key)
 		}
-		p.subscriptionTopics.subscriptionTopicMapMutex.Lock()
+		p.subscriptionTopics.subscriptionTopicMapMutex.Unlock()
 		topicVar.subscriptionsMutex.RUnlock()
 
 		//then deleting topic from topicsMap
 		delete(p.topics.topicsMap, TopicID)
 
-		log.Printf("topic %q deleted \n", TopicID)
+		log.Printf("DeleteTopic()-> topic %q deleted \n", TopicID)
 		return true, nil
 	} else {
-		log.Printf("TopicID %q don't exist \n", TopicID)
+		log.Printf("DeleteTopic()-> TopicID %q don't exist \n", TopicID)
 		return false,errors.New("topicID don't exist")
 	}
 

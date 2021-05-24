@@ -114,16 +114,25 @@ func pushMessage(p *PubSub) {
 		msg := <-(*p).ch
 
 		(*p).topics.topicMutex.RLock()
-		var topicVar *topic = (*p).topics.topicsMap[msg.topicId]
+		topicVar,ok := (*p).topics.topicsMap[msg.topicId]
 		(*p).topics.topicMutex.RUnlock()
 
-		var subsObjs map[string]*subscription = topicVar.subscriptions
+		if ok {
+			var subsObjs map[string]*subscription = topicVar.subscriptions
 
-		topicVar.subscriptionsMutex.RLock()
-		for _, val := range subsObjs {
-			go val.sendMessage(msg)
+			topicVar.subscriptionsMutex.RLock()
+			if len(subsObjs) == 0 {
+				log.Printf("pushMessage()-> this topic has no subscription")
+				topicVar.subscriptionsMutex.RUnlock()
+				continue
+			}
+			for _, val := range subsObjs {
+				go val.sendMessage(msg)
+			}
+			topicVar.subscriptionsMutex.RUnlock()
+		} else {
+			log.Printf("pushMessage()-> this topic doesn't exists, unknown topic:"+msg.topicId)
 		}
-		topicVar.subscriptionsMutex.RUnlock()
 	}
 
 }
