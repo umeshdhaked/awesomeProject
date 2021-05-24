@@ -13,7 +13,7 @@ import (
 	"time"
 )
 
-var pubSubObj pubsub.IPubSub = pubsub.GetPubSub()
+var pubSubObj pubsub.IPubSub = pubsub.NewPubSub()
 
 func createTpc(id string) {
 	pubSubObj.CreateTopic(id)
@@ -46,9 +46,21 @@ func main() {
 
 
 	var seededRand *rand.Rand = rand.New(rand.NewSource(time.Now().UnixNano()))
-	for i:=0 ; i<100 ; i++{
+	for i:=0 ; i<2 ; i++{
 		pubSubObj.Publish("topic1", fmt.Sprintf("Published randome Message: %v", seededRand.Int()))
 	}
+
+	//time.Sleep(time.Second*3)
+	//pubSubObj.UnSubscribe("sub1")
+	//pubSubObj.UnSubscribe("sub2")
+
+	//pubSubObj.DeleteSubscription("sub1")
+	//pubSubObj.DeleteSubscription("sub2")
+	//pubSubObj.DeleteTopic("topic1")
+
+	//time.Sleep(time.Second*3)
+	//pubSubObj.Publish("topic1", fmt.Sprintf("Published randome Message: %v", seededRand.Int()))
+
 
 	time.Sleep(time.Minute*5)
 }

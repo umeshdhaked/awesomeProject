@@ -7,8 +7,9 @@ import (
 )
 
 type topic struct {
-	topicId       string
-	subscriptions []*subscription
+	topicId            string
+	subscriptions      map[string]*subscription
+	subscriptionsMutex sync.RWMutex
 }
 
 type Message struct {
@@ -28,8 +29,6 @@ func (m Message) TopicId() string {
 func (m Message) Data() string {
 	return m.data
 }
-
-
 
 type subscriber func(message Message)
 
