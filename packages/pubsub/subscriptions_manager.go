@@ -8,71 +8,56 @@ import (
 )
 
 type subscriptionTopics struct {
-	subscriptionTopicMap      map[string]string
+	subscriptionTopicMap      sync.Map
 	subscriptionTopicMapMutex sync.RWMutex
 }
 
 //  Add subscription
 
 func (p *PubSub) AddSubscription(topicID, subName string) (bool, error) {
-	p.subscriptionTopics.subscriptionTopicMapMutex.Lock()
-	defer p.subscriptionTopics.subscriptionTopicMapMutex.Unlock()
 
-	_, ok := p.subscriptionTopics.subscriptionTopicMap[subName]
+	_, ok := p.subscriptionTopics.subscriptionTopicMap.Load(subName)
 	if ok {
-		fmt.Println("AddSubscription()-> subscription Already Exists",subName)
+		fmt.Println("AddSubscription()-> subscription Already Exists", subName)
 		return false, errors.New("subscription Already Exists")
 	} else {
 
-		p.topics.topicMutex.RLock()
-		topicVar, ok := p.topics.topicsMap[topicID]
-		p.topics.topicMutex.RUnlock()
+		topicVar, ok := p.topics.topicsMap.Load(topicID)
 		if !ok {
 			fmt.Println("AddSubscription()-> topic doesn't Exists")
 			return false, errors.New("topic doesn't Exists")
 		}
 
 		// adding subscription and topic entry in subscriptionTopicMap mutex
-		p.subscriptionTopics.subscriptionTopicMap[subName] = topicID
+		p.subscriptionTopics.subscriptionTopicMap.Store(subName, topicID)
 
 		// adding subscription in topic's subscription Map
-		topicVar.subscriptionsMutex.Lock()
-		(*topicVar).subscriptions[subName] = &subscription{subscriptionID: subName, pendingAckMsg: make(map[int]*Message)}
-		topicVar.subscriptionsMutex.Unlock()
+		topicVar.(*topic).subscriptions.Store(subName, &subscription{subscriptionID: subName, pendingAckMsg: sync.Map{}})
 
 		return true, nil
 	}
 }
 
-func (p *PubSub) DeleteSubscription(SubscriptionID string)  (bool, error) {
+func (p *PubSub) DeleteSubscription(SubscriptionID string) (bool, error) {
 
-	p.subscriptionTopics.subscriptionTopicMapMutex.Lock()
-	defer p.subscriptionTopics.subscriptionTopicMapMutex.Unlock()
-
-	topicId, ok := p.subscriptionTopics.subscriptionTopicMap[SubscriptionID]
+	topicId, ok := p.subscriptionTopics.subscriptionTopicMap.Load(SubscriptionID)
 
 	if ok {
-		var (
-			topicVar *topic
-			ok1 bool
-		)
-		topicVar, ok1 = p.topics.topicsMap[topicId]
-
+		topicVar, ok1 := p.topics.topicsMap.Load(topicId.(string))
 		if ok1 {
+			// removing subscriber before deleting subscription
+			p.UnSubscribe(SubscriptionID)
 			// deleting subscription pointer from topic
-			topicVar.subscriptionsMutex.Lock()
-			delete(topicVar.subscriptions, SubscriptionID)
-			topicVar.subscriptionsMutex.Unlock()
+			topicVar.(*topic).subscriptions.Delete(SubscriptionID)
 		}
 
 		// deleting subscription entry from subscriptionTopicMap
-		delete(p.subscriptionTopics.subscriptionTopicMap, SubscriptionID)
+		p.subscriptionTopics.subscriptionTopicMap.Delete(SubscriptionID)
 
 		log.Printf("DeleteSubscription()-> subscription %q deleted \n", SubscriptionID)
 
-		return true,nil
+		return true, nil
 	} else {
-		p.subscriptionTopics.subscriptionTopicMapMutex.Unlock()
 		log.Printf("DeleteSubscription()-> subscriptionID %q don't exist \n", SubscriptionID)
 		return false, errors.New("subscriptionID don't exist")
 	}

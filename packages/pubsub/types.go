@@ -8,7 +8,7 @@ import (
 
 type topic struct {
 	topicId            string
-	subscriptions      map[string]*subscription
+	subscriptions      sync.Map
 	subscriptionsMutex sync.RWMutex
 }
 
@@ -40,7 +40,7 @@ type iSubscription interface {
 
 type subscription struct {
 	subscriptionID  string
-	pendingAckMsg   map[int]*Message
+	pendingAckMsg   sync.Map
 	subscriber      *subscriber
 	pendingMapMutex sync.RWMutex
 }
@@ -49,28 +49,27 @@ type subscription struct {
 
 func (s *subscription) sendMessage(msg *Message) {
 
-	s.pendingMapMutex.Lock()
-	_, ok := s.pendingAckMsg[msg.messageId]
+	_, ok := s.pendingAckMsg.Load(msg.messageId)
 	if !ok {
 		ok = true
-		s.pendingAckMsg[msg.messageId] = msg
+		s.pendingAckMsg.Store(msg.messageId, msg)
 	}
-	s.pendingMapMutex.Unlock()
 
 	// Keep retry sending same message to subscriber each 5 second until we get the acknowledgement
-	for ok {
+	for i := 0; i < retryMaxCount && ok; i++ {
 		if s.subscriber != nil {
 			go (*s.subscriber)(*msg)
 		} else {
-			log.Println("sendMessage()-> No subscriber function found, Maybe there is no one func has subscribed it : ", s.subscriptionID)
+			log.Println("sendMessage()-> No subscriber found (Stopping retrySend also, message dropped for this subscriber) for subscription : ", s.subscriptionID)
+			s.pendingAckMsg.Delete(msg.messageId)
+			ok = false
+			continue
 		}
 
-		// 5 second time to check for Acknowledgement
+		// 15 second default time to check for Acknowledgement
 		time.Sleep(retryTime)
 
-		s.pendingMapMutex.RLock()
-		_, ok = s.pendingAckMsg[msg.messageId]
-		s.pendingMapMutex.RUnlock()
+		_, ok = s.pendingAckMsg.Load(msg.messageId)
 
 		if ok {
 			log.Printf("sendMessage()-> Resending the message with id %v \n", msg.messageId)

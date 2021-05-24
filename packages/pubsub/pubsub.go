@@ -2,8 +2,8 @@ package pubsub
 
 import (
 	"errors"
-	"fmt"
 	"log"
+	"sync"
 	"time"
 )
 
@@ -34,35 +34,27 @@ type PubSub struct {
 }
 
 const retryTime = time.Second * 15
-
+const retryMaxCount = 5
 
 func NewPubSub() IPubSub {
-	var pubsub *PubSub = &PubSub{0, true, make(chan *Message, 50), topics{topicsMap: make(map[string]*topic)}, subscriptionTopics{subscriptionTopicMap: make(map[string]string)}}
+	var pubsub *PubSub = &PubSub{0, true, make(chan *Message, 50), topics{topicsMap: *new(sync.Map)}, subscriptionTopics{subscriptionTopicMap: *new(sync.Map)}}
 	return pubsub
 }
 
-
 func (p *PubSub) Subscribe(subscriptionID string, subscriberFunc func(msg Message)) (bool, error) {
 
-	p.subscriptionTopics.subscriptionTopicMapMutex.RLock()
-	topicId, ok := p.subscriptionTopics.subscriptionTopicMap[subscriptionID]
-	p.subscriptionTopics.subscriptionTopicMapMutex.RUnlock()
+	topicId, ok := p.subscriptionTopics.subscriptionTopicMap.Load(subscriptionID)
 
 	if ok {
-		p.topics.topicMutex.RLock()
-		var topicVar *topic = p.topics.topicsMap[topicId]
-		p.topics.topicMutex.RUnlock()
+		topicVar, _ := p.topics.topicsMap.Load(topicId)
 
-		topicVar.subscriptionsMutex.RLock()
-		var subscriptionVar *subscription = topicVar.subscriptions[subscriptionID]
-		topicVar.subscriptionsMutex.RUnlock()
-
+		subscriptionVar, _ := topicVar.(*topic).subscriptions.Load(subscriptionID)
 
 		subscriberVar := subscriber(subscriberFunc)
-		subscriptionVar.addSubscriber(&subscriberVar)
+		subscriptionVar.(*subscription).addSubscriber(&subscriberVar)
 		return true, nil
 	} else {
-		log.Println("Subscribe()-> Subscription doesn't exist, subscriptionID:",subscriptionID)
+		log.Println("Subscribe()-> Subscription doesn't exist, subscriptionID:", subscriptionID)
 
 		return true, errors.New("this subscription doesn't exist")
 	}
@@ -71,25 +63,18 @@ func (p *PubSub) Subscribe(subscriptionID string, subscriberFunc func(msg Messag
 
 func (p *PubSub) UnSubscribe(subscriptionID string) (bool, error) {
 
-	p.subscriptionTopics.subscriptionTopicMapMutex.RLock()
-	topicId, ok := p.subscriptionTopics.subscriptionTopicMap[subscriptionID]
-	p.subscriptionTopics.subscriptionTopicMapMutex.RUnlock()
-
+	topicId, ok := p.subscriptionTopics.subscriptionTopicMap.Load(subscriptionID)
 
 	if ok {
-		p.topics.topicMutex.RLock()
-		var topicVar *topic = p.topics.topicsMap[topicId]
-		p.topics.topicMutex.RUnlock()
+		topicVar, _ := p.topics.topicsMap.Load(topicId.(string))
 
-		topicVar.subscriptionsMutex.RLock()
-		var subscriptionVar *subscription = topicVar.subscriptions[subscriptionID]
-		topicVar.subscriptionsMutex.RUnlock()
+		subscriptionVar, _ := topicVar.(*topic).subscriptions.Load(subscriptionID)
 
-		subscriptionVar.removeSubscriber()
+		subscriptionVar.(*subscription).removeSubscriber()
 
 		return true, nil
 	} else {
-		log.Println("UnSubscribe()-> Subscription doesn't exist, subscriptionID:",subscriptionID)
+		log.Println("UnSubscribe()-> Subscription doesn't exist, subscriptionID:", subscriptionID)
 		return true, errors.New("this subscription doesn't exist")
 	}
 }
@@ -113,25 +98,21 @@ func pushMessage(p *PubSub) {
 	for {
 		msg := <-(*p).ch
 
-		(*p).topics.topicMutex.RLock()
-		topicVar,ok := (*p).topics.topicsMap[msg.topicId]
-		(*p).topics.topicMutex.RUnlock()
+		topicVar, ok := (*p).topics.topicsMap.Load(msg.topicId)
 
 		if ok {
-			var subsObjs map[string]*subscription = topicVar.subscriptions
+			var size = 0
+			topicVar.(*topic).subscriptions.Range(func(_, value interface{}) bool {
+				go value.(*subscription).sendMessage(msg)
+				size++
+				return true
+			})
 
-			topicVar.subscriptionsMutex.RLock()
-			if len(subsObjs) == 0 {
+			if size == 0 {
 				log.Printf("pushMessage()-> this topic has no subscription")
-				topicVar.subscriptionsMutex.RUnlock()
-				continue
 			}
-			for _, val := range subsObjs {
-				go val.sendMessage(msg)
-			}
-			topicVar.subscriptionsMutex.RUnlock()
 		} else {
-			log.Printf("pushMessage()-> this topic doesn't exists, unknown topic:"+msg.topicId)
+			log.Printf("pushMessage()-> this topic doesn't exists, unknown topic:" + msg.topicId)
 		}
 	}
 
@@ -139,35 +120,25 @@ func pushMessage(p *PubSub) {
 
 func (p *PubSub) Ack(msgId int, subId string) (bool, error) {
 
-	p.subscriptionTopics.subscriptionTopicMapMutex.RLock()
-	topicId, ok := p.subscriptionTopics.subscriptionTopicMap[subId]
-	p.subscriptionTopics.subscriptionTopicMapMutex.RUnlock()
+	topicId, ok := p.subscriptionTopics.subscriptionTopicMap.Load(subId)
 
 	if ok {
 
-		p.topics.topicMutex.RLock()
-		var topicVar *topic = p.topics.topicsMap[topicId]
-		p.topics.topicMutex.RUnlock()
+		topicVar, _ := p.topics.topicsMap.Load(topicId.(string))
 
-		topicVar.subscriptionsMutex.RLock()
-		var subscriptionVar *subscription = topicVar.subscriptions[subId]
-		topicVar.subscriptionsMutex.RUnlock()
+		subscriptionVar, _ := topicVar.(*topic).subscriptions.Load(subId)
 
-
-		subscriptionVar.pendingMapMutex.Lock()
-		_, ok1 := subscriptionVar.pendingAckMsg[msgId]
+		_, ok1 := subscriptionVar.(*subscription).pendingAckMsg.Load(msgId)
 		if ok1 {
-			delete(subscriptionVar.pendingAckMsg, msgId)
-			subscriptionVar.pendingMapMutex.Unlock()
-			fmt.Printf("Ack()-> Message id %v has been Acknowledge by %v \n", msgId, subId)
+			subscriptionVar.(*subscription).pendingAckMsg.Delete(msgId)
+			log.Printf("Ack()-> Message id %v has been Acknowledge by %v \n", msgId, subId)
 			return true, nil
 		}
-		subscriptionVar.pendingMapMutex.Unlock()
-		fmt.Printf("Ack()-> Message is already Acknowledged or wrong messageId: %v in subscription: %v \n", msgId, subId)
+		log.Printf("Ack()-> Message is already Acknowledged or wrong messageId: %v in subscription: %v \n", msgId, subId)
 		return false, errors.New("message is already Ack or wrong subscriptionId")
 	} else {
-		fmt.Printf("Ack()-> subscription %v doesn't exist", subId)
-		return false,errors.New("subscription doesn't exist")
+		log.Printf("Ack()-> subscription %v doesn't exist", subId)
+		return false, errors.New("subscription doesn't exist")
 	}
 
 }
