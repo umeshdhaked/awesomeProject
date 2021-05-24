@@ -9,7 +9,6 @@ import "sync"
 
 type topics struct {
 	topicsMap  sync.Map
-	topicMutex sync.RWMutex
 }
 
 func (p *PubSub) CreateTopic(topicName string) (bool, error) {

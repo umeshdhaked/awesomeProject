@@ -9,7 +9,6 @@ import (
 type topic struct {
 	topicId            string
 	subscriptions      sync.Map
-	subscriptionsMutex sync.RWMutex
 }
 
 type Message struct {
@@ -42,7 +41,6 @@ type subscription struct {
 	subscriptionID  string
 	pendingAckMsg   sync.Map
 	subscriber      *subscriber
-	pendingMapMutex sync.RWMutex
 }
 
 // implicit implementation of iSubscription interface below

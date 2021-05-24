@@ -25,8 +25,8 @@ and consume at many **_subscriptions_**
    **b**. One-to-one relation of subscription with subscriber. <br />
    **c**. Publish-Subscribe system puts the messages from Publish api to a buffered channel of default bufferSize 50. <br />
    **d**. Internally library waits 15 second for the pushed message to be acknowledged by subscriber before resending it again. <br />
-   **e**. Library will keep resending a message every 15 second to a subscriber until it gets the acknowledgement from that subscriber for message
-   or max retryCount(which is 5 by default) exceeds. <br />
+   **e**. Library will keep resending a message every **15** second to a subscriber until it gets the acknowledgement from that subscriber for message
+   or max retryCount(which is **5** by default) exceeds or if **subscriber/subscription/topic** is removed. <br />
    
 
 4. Running embedded test runner <br/>

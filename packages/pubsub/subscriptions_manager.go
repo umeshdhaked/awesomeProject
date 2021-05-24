@@ -9,7 +9,6 @@ import (
 
 type subscriptionTopics struct {
 	subscriptionTopicMap      sync.Map
-	subscriptionTopicMapMutex sync.RWMutex
 }
 
 //  Add subscription
