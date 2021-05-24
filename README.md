@@ -29,8 +29,8 @@ and consume at many **_subscriptions_**
    
 
 4. Running embedded test runner <br/>
-   To run internal test runner main package, Download the zip.
-   then run from base directory run _`go run runner/main.go`_ <br/>
+   To run internal test runner main package, Download lib and unzip it, then navigate to runner directory `cd runner` <br/>
+   then run following command _`go run main.go`_ <br/>
    
    it will create one topic "topic1" and two subscription "sub1" and "sub2"
    then will do a 100 of publish to "topic1" which will propagate each message to both subscriptions, and you will be able to see output on your screen
