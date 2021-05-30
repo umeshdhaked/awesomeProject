@@ -8,7 +8,7 @@ import (
 )
 
 type subscriptionTopics struct {
-	subscriptionTopicMap      sync.Map
+	subscriptionTopicMap      *sync.Map
 }
 
 //  Add subscription

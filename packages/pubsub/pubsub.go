@@ -37,7 +37,7 @@ const retryTime = time.Second * 15
 const retryMaxCount = 5
 
 func NewPubSub() IPubSub {
-	var pubsub *PubSub = &PubSub{0, true, make(chan *Message, 50), topics{topicsMap: *new(sync.Map)}, subscriptionTopics{subscriptionTopicMap: *new(sync.Map)}}
+	var pubsub *PubSub = &PubSub{0, true, make(chan *Message, 50), topics{topicsMap: new(sync.Map)}, subscriptionTopics{subscriptionTopicMap: new(sync.Map)}}
 	return pubsub
 }
 

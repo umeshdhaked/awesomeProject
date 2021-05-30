@@ -8,7 +8,7 @@ import (
 import "sync"
 
 type topics struct {
-	topicsMap  sync.Map
+	topicsMap  *sync.Map
 }
 
 func (p *PubSub) CreateTopic(topicName string) (bool, error) {
